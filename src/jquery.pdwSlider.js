@@ -52,7 +52,9 @@ if (jQuery)
                     animationDelay: 4500,
                     beforeChange: false,
                     afterChange: false,
-                    easing: "swing"
+                    easing: "swing",
+                    autostart: true,
+                    is_fullscreen: true
                 };
                 $.extend(true, options, userOptions || {});
 
@@ -61,7 +63,10 @@ if (jQuery)
                     $(this).data('options', options);
                     $(this).data('actual', 0);
                     $(this).pdwSlider('prepare');
-                    $(this).pdwSlider('start');
+                    if (false !== options.autostart && true === options.is_fullscreen)
+                    {
+                        $(this).pdwSlider('start');
+                    }
                 });
             },
             prepare: function()
@@ -73,31 +78,60 @@ if (jQuery)
                     options = $(this).data('options'),
                     width = container.width();
 
-                container
-                    .children('div')
-                    .css({
-                        position: 'absolute',
-                        top: 0
-                    })
-                    .not(':first-child')
-                    .css({
-                        left: width
-                    });
-                container.hover(function()
-                    {
-                        $(this).pdwSlider('stop');
-                    },
-                    function()
-                    {
-                        if ($(this).data('interval') == null)
+                $(this).data('container-width', width);
+
+                if (false === options.is_fullscreen)
+                {
+                    var position = 0,
+                        childWidth = container.children('div').eq(0).width();
+                    container
+                        .children('div')
+                        .css({
+                            position: 'absolute',
+                            top: 0
+                        })
+                        .each(function()
                         {
-                            return;
-                        }
-                        $(this).pdwSlider('start');
-                    });
+                            $(this).css({
+                                left: childWidth * position
+                            });
+                            position++;
+                        });
+                    $(this).data('max-width', childWidth * container.children('div').length);
+                }
+                else
+                {
+                    container
+                        .children('div')
+                        .css({
+                            position: 'absolute',
+                            top: 0
+                        })
+                        .not(':first-child')
+                        .css({
+                            left: width
+                        });
+                    container.hover(function()
+                        {
+                            $(this).pdwSlider('stop');
+                        },
+                        function()
+                        {
+                            if ($(this).data('interval') == null || false === options.autostart)
+                            {
+                                return;
+                            }
+                            $(this).pdwSlider('start');
+                        });
+                }
             },
             stop: function()
             {
+                var options = $(this).data('options');
+                if (false === options.is_fullscreen)
+                {
+                    return;
+                }
                 clearInterval($(this).data('interval'));
                 $(this).data('interval', null);
             },
@@ -105,54 +139,91 @@ if (jQuery)
             {
                 var options = $(this).data('options'),
                     children = $(this).children('div'),
-                    width = $(this).width(),
-                    actual = $(this).data('actual'),
-                    actualChildren = $(children[actual]),
-                    previous = actual - 1;
-                if (previous <= 0)
+                    width = $(this).width();
+
+                if (false === options.is_fullscreen)
                 {
-                    previous = children.length - 1;
+                    var maxWidth = $(this).data('max-width'),
+                        firstChildLeft = Math.abs(children.eq(0).position().left);
+                    if (firstChildLeft + width >= maxWidth)
+                    {
+                        return;
+                    }
+                    children.each(function()
+                    {
+                        $(this).stop(true, true).animate({
+                            left: $(this).position().left - $(this).width()
+                        }, options.animationSpeed, options.easing);
+                    });
                 }
-                var previousChildren = $(children[previous]);
-                previousChildren.css({
-                    left: -width
-                });
+                else
+                {
+                    var actual = $(this).data('actual'),
+                        actualChildren = $(children[actual]),
+                        previous = actual - 1;
+                    if (previous < 0)
+                    {
+                        previous = children.length - 1;
+                    }
+                    var previousChildren = $(children[previous]);
+                    previousChildren.css({
+                        left: -width
+                    });
 
-                actualChildren.animate({
-                    left: width
-                }, options.animationSpeed, options.easing);
+                    actualChildren.stop(true, true).animate({
+                        left: width
+                    }, options.animationSpeed, options.easing);
 
-                previousChildren.animate({
-                    left: 0
-                }, options.animationSpeed, options.easing);
-                $(this).data('actual', previous);
+                    previousChildren.stop(true, true).animate({
+                        left: 0
+                    }, options.animationSpeed, options.easing);
+                    $(this).data('actual', previous);
+                }
             },
             next: function()
             {
                 var options = $(this).data('options'),
                     children = $(this).children('div'),
-                    width = $(this).width(),
-                    actual = $(this).data('actual'),
-                    actualChildren = $(children[actual]),
-                    next = actual + 1;
-                if (next >= children.length)
-                {
-                    next = 0;
-                }
-                var nextChildren = $(children[next]);
+                    width = $(this).width();
 
-                actualChildren.animate({
-                    left: -width
-                }, options.animationSpeed, options.easing, function()
+                if (false === options.is_fullscreen)
                 {
-                    $(this).css({
-                        left: width
+                    var firstChildLeft = children.eq(0).position().left;
+                    if (firstChildLeft >= 0)
+                    {
+                        return;
+                    }
+                    children.each(function()
+                    {
+                        $(this).stop(true, true).animate({
+                            left: $(this).position().left + $(this).width()
+                        }, options.animationSpeed, options.easing);
                     });
-                });
-                nextChildren.animate({
-                    left: 0
-                }, options.animationSpeed, options.easing);
-                $(this).data('actual', next);
+                }
+                else
+                {
+                    var actual = $(this).data('actual'),
+                        actualChildren = $(children[actual]),
+                        next = actual + 1;
+                    if (next >= children.length)
+                    {
+                        next = 0;
+                    }
+                    var nextChildren = $(children[next]);
+
+                    actualChildren.stop(true, true).animate({
+                        left: -width
+                    }, options.animationSpeed, options.easing, function()
+                    {
+                        $(this).css({
+                            left: width
+                        });
+                    });
+                    nextChildren.stop(true, true).animate({
+                        left: 0
+                    }, options.animationSpeed, options.easing);
+                    $(this).data('actual', next);
+                }
             },
             start: function()
             {
@@ -160,6 +231,10 @@ if (jQuery)
                     options = $(this).data('options'),
                     children = container.children('div'),
                     interval;
+                if (false === options.is_fullscreen)
+                {
+                    return;
+                }
                 if (children.length <= 1)
                 {
                     return;
