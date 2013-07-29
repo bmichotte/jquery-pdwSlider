@@ -20,6 +20,8 @@ $('#myCoverflow').pdwSlider('next');
     animationDelay: 4500,
     beforeChange: false|function,
     afterChange: false|function,
-    easing: "swing"
+    easing: "swing",
+    previousButton: "selector",
+    nextButton: "selector",
 }
 ```

@@ -54,7 +54,9 @@ if (jQuery)
                     afterChange: false,
                     easing: "swing",
                     autostart: true,
-                    is_fullscreen: true
+                    isFullscreen: false,
+                    previousButton: null,
+                    nextButton: null
                 };
                 $.extend(true, options, userOptions || {});
 
@@ -63,7 +65,7 @@ if (jQuery)
                     $(this).data('options', options);
                     $(this).data('actual', 0);
                     $(this).pdwSlider('prepare');
-                    if (false !== options.autostart && true === options.is_fullscreen)
+                    if (false !== options.autostart && true === options.isFullscreen)
                     {
                         $(this).pdwSlider('start');
                     }
@@ -80,7 +82,7 @@ if (jQuery)
 
                 $(this).data('container-width', width);
 
-                if (false === options.is_fullscreen)
+                if (false === options.isFullscreen)
                 {
                     var position = 0,
                         childWidth = container.children('div').eq(0).width();
@@ -124,11 +126,38 @@ if (jQuery)
                             $(this).pdwSlider('start');
                         });
                 }
+                var btn;
+                if (options.nextButton)
+                {
+                    btn = options.nextButton;
+                    if (typeof btn == 'string')
+                    {
+                        btn = $(btn);
+                        options.nextButton = btn;
+                    }
+                    btn.on('click', function()
+                    {
+                        container.pdwSlider('next');
+                    });
+                }
+                if (options.previousButton)
+                {
+                    btn = options.previousButton;
+                    if (typeof btn == 'string')
+                    {
+                        btn = $(btn);
+                        options.previousButton = btn;
+                    }
+                    btn.on('click', function()
+                    {
+                        container.pdwSlider('previous');
+                    });
+                }
             },
             stop: function()
             {
                 var options = $(this).data('options');
-                if (false === options.is_fullscreen)
+                if (false === options.isFullscreen)
                 {
                     return;
                 }
@@ -141,19 +170,52 @@ if (jQuery)
                     children = $(this).children('div'),
                     width = $(this).width();
 
-                if (false === options.is_fullscreen)
+                if (options.previousButton && options.previousButton.hasClass('moving')
+                    || options.nextButton && options.nextButton.hasClass('moving'))
+                {
+                    return;
+                }
+
+                if (options.nextButton)
+                {
+                    options.nextButton.addClass('moving');
+                }
+                if (options.previousButton)
+                {
+                    options.previousButton.addClass('moving');
+                }
+
+                if (false === options.isFullscreen)
                 {
                     var maxWidth = $(this).data('max-width'),
                         firstChildLeft = Math.abs(children.eq(0).position().left);
                     if (firstChildLeft + width >= maxWidth)
                     {
+                        if (options.previousButton)
+                        {
+                            options.previousButton.removeClass('moving')
+                        }
+                        if (options.nextButton)
+                        {
+                            options.nextButton.removeClass('moving')
+                        }
                         return;
                     }
                     children.each(function()
                     {
                         $(this).stop(true, true).animate({
                             left: $(this).position().left - $(this).width()
-                        }, options.animationSpeed, options.easing);
+                        }, options.animationSpeed, options.easing, function()
+                        {
+                            if (options.previousButton)
+                            {
+                                options.previousButton.removeClass('moving')
+                            }
+                            if (options.nextButton)
+                            {
+                                options.nextButton.removeClass('moving')
+                            }
+                        });
                     });
                 }
                 else
@@ -176,7 +238,17 @@ if (jQuery)
 
                     previousChildren.stop(true, true).animate({
                         left: 0
-                    }, options.animationSpeed, options.easing);
+                    }, options.animationSpeed, options.easing, function()
+                    {
+                        if (options.previousButton)
+                        {
+                            options.previousButton.removeClass('moving')
+                        }
+                        if (options.nextButton)
+                        {
+                            options.nextButton.removeClass('moving')
+                        }
+                    });
                     $(this).data('actual', previous);
                 }
             },
@@ -186,18 +258,51 @@ if (jQuery)
                     children = $(this).children('div'),
                     width = $(this).width();
 
-                if (false === options.is_fullscreen)
+                if (options.previousButton && options.previousButton.hasClass('moving')
+                    || options.nextButton && options.nextButton.hasClass('moving'))
+                {
+                    return;
+                }
+
+                if (options.nextButton)
+                {
+                    options.nextButton.addClass('moving');
+                }
+                if (options.previousButton)
+                {
+                    options.previousButton.addClass('moving');
+                }
+
+                if (false === options.isFullscreen)
                 {
                     var firstChildLeft = children.eq(0).position().left;
                     if (firstChildLeft >= 0)
                     {
+                        if (options.previousButton)
+                        {
+                            options.previousButton.removeClass('moving')
+                        }
+                        if (options.nextButton)
+                        {
+                            options.nextButton.removeClass('moving')
+                        }
                         return;
                     }
                     children.each(function()
                     {
                         $(this).stop(true, true).animate({
                             left: $(this).position().left + $(this).width()
-                        }, options.animationSpeed, options.easing);
+                        }, options.animationSpeed, options.easing, function()
+                        {
+                            if (options.previousButton)
+                            {
+                                options.previousButton.removeClass('moving')
+                            }
+                            if (options.nextButton)
+                            {
+                                options.nextButton.removeClass('moving')
+                            }
+                        });
                     });
                 }
                 else
@@ -221,7 +326,17 @@ if (jQuery)
                     });
                     nextChildren.stop(true, true).animate({
                         left: 0
-                    }, options.animationSpeed, options.easing);
+                    }, options.animationSpeed, options.easing, function()
+                    {
+                        if (options.previousButton)
+                        {
+                            options.previousButton.removeClass('moving')
+                        }
+                        if (options.nextButton)
+                        {
+                            options.nextButton.removeClass('moving')
+                        }
+                    });
                     $(this).data('actual', next);
                 }
             },
@@ -231,7 +346,7 @@ if (jQuery)
                     options = $(this).data('options'),
                     children = container.children('div'),
                     interval;
-                if (false === options.is_fullscreen)
+                if (false === options.isFullscreen)
                 {
                     return;
                 }
